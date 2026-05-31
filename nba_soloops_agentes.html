@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NBA: Solo Ops — Registro de Agentes</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+
+:root {
+  --ink:     #1a1108;
+  --paper:   #f2ece0;
+  --cream:   #faf6ee;
+  --rule:    #c8b89a;
+  --red:     #8b1a1a;
+  --red2:    #b02020;
+  --dim:     #7a6e60;
+  --ghost:   #d5cdbf;
+  --mono:    'Share Tech Mono', 'Courier New', monospace;
+  --serif:   'Libre Baskerville', Georgia, serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--mono);background:var(--paper);color:var(--ink);min-height:100vh;}
+
+/* ── LAYOUT ── */
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:260px;flex-shrink:0;background:#1a1108;border-right:1px solid #333;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.main{margin-left:260px;flex:1;padding:2rem 2.5rem;max-width:900px;}
+
+/* ── SIDEBAR ── */
+.sb-logo{padding:1.25rem 1.25rem 1rem;border-bottom:1px solid #2a2418;}
+.sb-logo-tag{font-size:8px;color:#5a4f40;letter-spacing:4px;margin-bottom:4px;}
+.sb-logo-title{font-size:15px;color:#f2ece0;letter-spacing:3px;}
+.sb-logo-sub{font-size:9px;color:#4a3f30;letter-spacing:1px;margin-top:2px;}
+
+.sb-section{padding:1rem 1.25rem;border-bottom:1px solid #2a2418;}
+.sb-section-label{font-size:8px;color:#5a4f40;letter-spacing:4px;margin-bottom:0.75rem;}
+
+.sb-btn{display:flex;align-items:center;gap:8px;width:100%;background:none;border:1px solid #333;
+  color:#a89880;padding:9px 12px;font-family:var(--mono);font-size:11px;letter-spacing:1px;
+  cursor:pointer;transition:all .15s;text-align:left;margin-bottom:4px;}
+.sb-btn:hover{border-color:#5a4f40;color:#f2ece0;}
+.sb-btn.primary{border-color:var(--red);color:var(--red);}
+.sb-btn.primary:hover{background:var(--red);color:#fff;}
+.sb-btn .icon{font-size:14px;width:16px;text-align:center;}
+
+.agent-list{flex:1;overflow-y:auto;padding:0 1.25rem 1rem;}
+.agent-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #2a2418;
+  cursor:pointer;transition:all .15s;margin-bottom:3px;background:none;}
+.agent-item:hover{border-color:#4a3f30;background:#1f1a10;}
+.agent-item.active{border-color:var(--red);background:#1f1208;}
+.agent-item-name{flex:1;font-size:11px;color:#a89880;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.agent-item.active .agent-item-name{color:#f2ece0;}
+.agent-item-del{background:none;border:none;color:#3a3020;cursor:pointer;font-size:14px;padding:2px 4px;
+  transition:color .15s;line-height:1;}
+.agent-item:hover .agent-item-del{color:#6a4040;}
+.agent-item-del:hover{color:var(--red)!important;}
+.no-agents{font-size:10px;color:#4a3f30;letter-spacing:1px;padding:0.5rem 0;line-height:1.8;}
+
+.sb-footer{padding:0.75rem 1.25rem;border-top:1px solid #2a2418;}
+.sb-footer-text{font-size:9px;color:#3a3020;line-height:1.7;}
+
+/* ── MAIN HEADER ── */
+.page-header{border-bottom:2px solid var(--red);padding-bottom:1rem;margin-bottom:1.75rem;}
+.page-header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.page-tag{font-size:9px;color:var(--dim);letter-spacing:3px;}
+.page-clearance{font-size:9px;color:var(--red);border:1px solid var(--red);padding:3px 10px;letter-spacing:2px;}
+.page-title{font-size:22px;color:var(--ink);letter-spacing:4px;font-family:var(--mono);}
+.page-sub{font-size:10px;color:var(--dim);letter-spacing:1px;margin-top:3px;}
+
+/* ── PROGRESS ── */
+.progress-wrap{margin-bottom:1.75rem;}
+.progress-steps{display:flex;gap:4px;margin-bottom:6px;}
+.step-pip{flex:1;height:3px;background:var(--ghost);transition:background .3s;}
+.step-pip.done{background:var(--red);}
+.step-pip.active{background:var(--red2);}
+.progress-label{font-size:9px;color:var(--dim);letter-spacing:2px;}
+
+/* ── STEP ── */
+.step-no{font-size:9px;color:var(--dim);letter-spacing:3px;margin-bottom:4px;}
+.step-title{font-size:17px;color:var(--ink);letter-spacing:2px;margin-bottom:1.25rem;}
+
+/* ── SECTIONS ── */
+.card{background:var(--cream);border:1px solid var(--rule);padding:1.25rem;margin-bottom:1rem;}
+.card-title{font-size:8px;color:var(--red);letter-spacing:4px;margin-bottom:.75rem;
+  text-transform:uppercase;border-bottom:1px solid #e5ddd0;padding-bottom:5px;}
+.nota{font-size:11px;color:var(--dim);margin-bottom:12px;line-height:1.7;font-family:var(--serif);}
+
+/* ── FORM ── */
+label{font-size:9px;color:var(--dim);letter-spacing:2px;display:block;margin-bottom:4px;text-transform:uppercase;}
+input[type=text],textarea{
+  background:#fff;border:1px solid var(--rule);color:var(--ink);
+  padding:8px 10px;font-family:var(--mono);font-size:13px;width:100%;outline:none;
+  transition:border-color .2s;}
+input[type=text]:focus,textarea:focus{border-color:var(--red);}
+textarea{resize:vertical;min-height:72px;}
+.field{margin-bottom:12px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* ── ABILITY GRIDS ── */
+.ab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:4px;}
+.ab-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--ghost);
+  cursor:pointer;transition:all .15s;font-size:11px;color:var(--dim);user-select:none;background:#fff;}
+.ab-item:hover{border-color:var(--red);color:var(--ink);}
+.ab-item.fixed{color:#bbb;border-color:#e8e3da;cursor:default;background:#f6f3ee;}
+.ab-item.fixed .dot{background:#ccc;}
+.ab-item.sel{border-color:var(--red);color:var(--ink);background:#fdf0ee;}
+.ab-item.sel .dot{background:var(--red2);}
+.dot{width:6px;height:6px;border-radius:50%;background:#ccc;flex-shrink:0;}
+.ab-type{font-size:8px;color:#ccc;margin-left:auto;letter-spacing:1px;}
+.ab-item.sel .ab-type{color:var(--red);}
+
+.gen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px;}
+.gen-item{display:flex;justify-content:space-between;align-items:center;
+  padding:7px 10px;border:1px solid var(--ghost);font-size:11px;color:var(--dim);background:#fff;}
+.gen-item .cat{font-size:8px;color:#ccc;margin-top:1px;}
+.gen-dice{color:var(--red);font-size:13px;font-weight:bold;}
+
+.counter{font-size:11px;color:var(--dim);margin-bottom:.75rem;}
+.counter b{color:var(--red2);}
+.warning{font-size:10px;color:var(--red);margin-top:6px;}
+
+/* ── MASTERIES ── */
+.mastery-group-title{font-size:9px;color:var(--dim);letter-spacing:2px;
+  margin:1rem 0 5px;padding-bottom:4px;border-bottom:1px solid #e5ddd0;}
+.mastery-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;
+  border:1px solid var(--ghost);cursor:pointer;transition:all .15s;
+  margin-bottom:3px;font-size:11px;color:var(--dim);user-select:none;background:#fff;}
+.mastery-item:hover{border-color:var(--red);color:var(--ink);}
+.mastery-item.sel{border-color:var(--red);background:#fdf0ee;color:var(--ink);}
+.mastery-item.sel .dot{background:var(--red2);}
+.mastery-name{font-weight:bold;color:var(--ink);font-size:12px;}
+.mastery-desc{font-size:10px;color:var(--dim);margin-top:3px;line-height:1.5;font-family:var(--serif);}
+
+/* ── BUTTONS ── */
+.btn-row{display:flex;justify-content:space-between;margin-top:1.5rem;gap:10px;}
+.btn{background:#fff;border:1px solid var(--rule);color:var(--dim);
+  padding:9px 22px;font-family:var(--mono);font-size:10px;letter-spacing:2px;
+  cursor:pointer;transition:all .15s;text-transform:uppercase;}
+.btn:hover{border-color:var(--dim);color:var(--ink);}
+.btn.pri{border-color:var(--red);color:var(--red);}
+.btn.pri:hover{background:var(--red);color:#fff;}
+.btn:disabled{opacity:.3;cursor:not-allowed;}
+.btn.danger{border-color:#6a3030;color:#8a5050;}
+.btn.danger:hover{background:#6a3030;color:#fff;}
+
+.action-strip{display:flex;gap:8px;margin-top:1.25rem;flex-wrap:wrap;}
+.action-btn{display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--rule);
+  color:var(--dim);padding:8px 16px;font-family:var(--mono);font-size:10px;letter-spacing:2px;
+  cursor:pointer;transition:all .15s;text-transform:uppercase;}
+.action-btn:hover{border-color:var(--dim);color:var(--ink);}
+.action-btn.red{border-color:var(--red);color:var(--red);}
+.action-btn.red:hover{background:var(--red);color:#fff;}
+
+/* ── RESUMEN ── */
+.res-nombre{font-size:24px;letter-spacing:3px;margin-bottom:3px;}
+.res-sub{font-size:10px;color:var(--dim);letter-spacing:2px;margin-bottom:1.5rem;}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1rem;}
+.stat-row{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);
+  padding:5px 0;border-bottom:1px solid #e8e3d8;}
+.stat-val{color:var(--red);font-weight:bold;}
+.inv-list{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
+.inv-item{font-size:10px;color:var(--dim);padding:2px 0;}
+.inv-item.opc{color:var(--ink);}
+.inv-item::before{content:"▸ ";color:var(--red);}
+.guinda-card{margin-bottom:5px;padding:9px 12px;border:1px solid var(--rule);
+  background:#fdf0ee;border-left:3px solid var(--red);}
+.guinda-titulo{font-size:12px;color:var(--ink);font-weight:bold;}
+.guinda-hab{font-size:8px;color:var(--red);margin-left:8px;letter-spacing:1px;}
+.guinda-desc{font-size:10px;color:var(--dim);margin-top:4px;line-height:1.5;font-family:var(--serif);}
+.lore-box{padding:10px 12px;border-left:3px solid var(--red);background:#f8f4ed;}
+.lore-box h4{font-size:8px;color:var(--red);letter-spacing:3px;margin-bottom:5px;}
+.lore-box p{font-size:11px;color:var(--dim);line-height:1.7;font-family:var(--serif);}
+.res-2col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,8,4,.75);z-index:200;
+  display:flex;align-items:center;justify-content:center;}
+.modal-overlay.hidden{display:none;}
+.modal{background:var(--cream);border:1px solid var(--rule);padding:2rem;max-width:440px;width:90%;}
+.modal-title{font-size:13px;letter-spacing:3px;margin-bottom:1rem;color:var(--ink);}
+.modal-text{font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:1.5rem;font-family:var(--serif);}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;}
+
+/* ── PRINT ── */
+@media print{
+  .sidebar,.action-strip,.btn-row,.page-header{display:none!important;}
+  .main{margin-left:0!important;padding:0!important;max-width:100%!important;}
+  .card{break-inside:avoid;border:1px solid #ccc!important;background:#fff!important;}
+  body{background:#fff!important;}
+  .inv-list{grid-template-columns:repeat(3,1fr);}
+}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1108;color:#f2ece0;
+  padding:10px 18px;font-size:10px;letter-spacing:2px;z-index:300;
+  transform:translateY(80px);opacity:0;transition:all .3s;}
+.toast.show{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-tag">ARCHIVOS // CLASIFICADO</div>
+    <div class="sb-logo-title">AGENTES DE LA NOCHE</div>
+    <div class="sb-logo-sub">Solo Ops · GUMSHOE One-2-One</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-section-label">ACCIONES</div>
+    <button class="sb-btn primary" onclick="nuevoAgente()">
+      <span class="icon">+</span>NUEVO AGENTE
+    </button>
+    <button class="sb-btn" onclick="importarJSON()">
+      <span class="icon">↑</span>IMPORTAR JSON
+    </button>
+  </div>
+
+  <div class="sb-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding-bottom:0;">
+    <div class="sb-section-label">AGENTES GUARDADOS</div>
+    <div class="agent-list" id="agentList">
+      <div class="no-agents" id="noAgentsMsg">Sin agentes registrados.<br>Crea el primero.</div>
+    </div>
+  </div>
+
+  <div class="sb-footer">
+    <div class="sb-footer-text">NBA: Solo Ops · Traducción de referencia<br>Registro de Agentes v1.0</div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<main class="main">
+  <div class="page-header">
+    <div class="page-header-top">
+      <div class="page-tag">AGENTES DE LA NOCHE // SOLO OPS</div>
+      <div class="page-clearance" id="clearanceTag">CLASIFICADO</div>
+    </div>
+    <div class="page-title" id="pageTitle">REGISTRO DE AGENTES</div>
+    <div class="page-sub" id="pageSub">Protocolo de identidad encubierta // GUMSHOE One-2-One</div>
+  </div>
+
+  <div id="progressWrap" class="progress-wrap" style="display:none;">
+    <div class="progress-steps" id="progressBar"></div>
+    <div class="progress-label" id="progressLabel"></div>
+  </div>
+
+  <div id="appContent"></div>
+</main>
+
+</div>
+
+<!-- Modal de confirmación -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-text" id="modalText"></div>
+    <div class="modal-btns" id="modalBtns"></div>
+  </div>
+</div>
+
+<!-- Input oculto para importar -->
+<input type="file" id="fileInput" accept=".json" style="display:none" onchange="leerJSON(this)">
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// DATOS DEL JUEGO
+// ─────────────────────────────────────────────────────────────
+const INV_FIJAS = [
+  'Detección de mentiras','Adulación','Intimidación','Advertir',
+  'Tranquilizar','Investigación','Bajos fondos','Supervivencia urbana','Espionaje'
+];
+const INV_OPCIONALES = [
+  {n:'Contabilidad',t:'Académica'},{n:'Arqueología',t:'Académica'},
+  {n:'Arquitectura',t:'Académica'},{n:'Historia del arte',t:'Académica'},
+  {n:'Astronomía',t:'Técnica'},{n:'Burocracia',t:'Interpersonal'},
+  {n:'Química',t:'Técnica'},{n:'Jerga policial',t:'Interpersonal'},
+  {n:'Criminología',t:'Académica'},{n:'Criptografía',t:'Técnica'},
+  {n:'Recuperación de datos',t:'Técnica'},{n:'Diagnóstico',t:'Académica'},
+  {n:'Vigilancia electrónica',t:'Técnica'},{n:'Patología forense',t:'Técnica'},
+  {n:'Falsificación',t:'Técnica'},{n:'Alta sociedad',t:'Interpersonal'},
+  {n:'Historia',t:'Académica'},{n:'Geografía humana',t:'Académica'},
+  {n:'Interrogatorio',t:'Interpersonal'},{n:'Idiomas',t:'Académica'},
+  {n:'Derecho',t:'Académica'},{n:'Ciencias militares',t:'Académica'},
+  {n:'Negociación',t:'Interpersonal'},{n:'Ocultismo',t:'Académica'},
+  {n:'Supervivencia montaraz',t:'Técnica'},{n:'Farmacología',t:'Técnica'},
+  {n:'Fotografía',t:'Técnica'},{n:'Análisis de tráfico',t:'Técnica'},
+  {n:'Vampirología',t:'Académica'},
+];
+const GENERALES = [
+  {n:'Atletismo',c:'Física'},{n:'Birlar',c:'Manual'},{n:'Sangre Fría',c:'Mental'},
+  {n:'Cobertura',c:'Social'},{n:'Conducción',c:'Manual'},{n:'Evasión',c:'Física'},
+  {n:'Combate',c:'Física'},{n:'Ocultar',c:'Manual'},{n:'Infiltración',c:'Física'},
+  {n:'Mecánica',c:'Manual'},{n:'Medicina',c:'Manual'},{n:'Red de contactos',c:'Social'},
+  {n:'Preparación',c:'Mental'},{n:'Sentir el peligro',c:'Mental'},{n:'Disparo',c:'Física'},
+  {n:'Vigilancia',c:'Social'},
+];
+const GUINDAS = {
+  'Atletismo':[
+    {n:'Reflejos entrenados',d:'Tienes unos reflejos asombrosos y puedes esquivar o minimizar los efectos de casi cualquier golpe. Descarta para ganar +1 dado de Atletismo en un Desafío.'},
+    {n:'Imparable',d:'Descarta para cambiar inmediatamente 1 o 2 Heridas por un Problema Dañado.'},
+  ],'Birlar':[
+    {n:'Manos rápidas',d:'Descarta para declarar retroactivamente que cogiste con disimulo algún objeto pequeño —una llave, un pendrive, una tarjeta de crédito— mencionado en una escena anterior.'},
+    {n:'Sin errores',d:'Descarta para obtener automáticamente un Hold en un Desafío de Birlar.'},
+  ],'Sangre Fría':[
+    {n:'Inquebrantable',d:'Nada te afecta. Nada deja marca. Si conservas esta carta al final de la operación, descártala para Contrarrestar cualquier Problema.'},
+    {n:'Frío como el hielo',d:'Te mantienes tranquilo bajo presión y no se te escapa nada. Descarta para ignorar todas las penalizaciones en una prueba.'},
+  ],'Cobertura':[
+    {n:'Cobertura conectada',d:'Tienes varias identidades alternativas bien establecidas. Descarta mientras estás encubierta para que un PNJ te reconozca como tu identidad alternativa. El PNJ responde por ti.'},
+    {n:'Disfraz rápido',d:'Descarta para encontrar automáticamente los elementos de un disfraz básico en la escena. Obtienes automáticamente un Hold en una prueba de Cobertura.'},
+  ],'Conducción':[
+    {n:'Grand Theft Auto',d:'Descarta para robar un coche de forma automática e instantánea. Sin prueba ni demora: es tan fácil como abrir la puerta y deslizarte al volante.'},
+    {n:'Artista del volante',d:'Descarta para ganar +1 dado de Conducción en un Desafío.'},
+  ],'Evasión':[
+    {n:'Desvanecerse',d:'Si estás fuera de la vista de tus enemigos, puedes escapar de la escena. No puedes llevarte nada ni a nadie contigo: es el equivalente dramático de un asiento eyectable.'},
+    {n:'Esquívame eso',d:'Descarta para ganar +1 dado de Evasión en un Desafío.'},
+  ],'Combate':[
+    {n:'Experta en artes marciales',d:'Descarta para ganar +2 dados de Combate en un Desafío cuando luchas con las manos desnudas.'},
+    {n:'Experta en armas',d:'Descarta para ganar +2 dados de Combate en un Desafío cuando luchas con un arma.'},
+    {n:'Aguante',d:'Descarta esta carta para ignorar las penalizaciones de cualquier carta de Herida o Dañado durante el resto de esta escena.'},
+  ],'Ocultar':[
+    {n:'Ocultación perfecta',d:'Siempre tienes algo bajo la manga. Descarta para sacar cualquier objeto pequeño, incluso si has sido registrada a fondo o has pasado por un escáner de seguridad.'},
+    {n:'Alijo',d:'Descarta para revelar que ya habías escondido previamente un alijo de equipo donde ahora puedes recuperarlo.'},
+  ],'Infiltración':[
+    {n:'Ábrete Sésamo',d:'Descarta para obtener automáticamente un Hold en una prueba de Infiltración que implique una puerta, cerradura u obstáculo similar.'},
+    {n:'Operador silencioso',d:'Descarta para obtener automáticamente un Hold en un Desafío de Combate cuando emboscas desde las sombras.'},
+  ],'Mecánica':[
+    {n:'¡Boom!',d:'Descarta esta carta en cualquier momento después de haber colocado una bomba. La bomba explota, y puedes describir la explosión y elegir quién recibe el impacto principal. Si es parte de una prueba, obtienes automáticamente un Avance.'},
+    {n:'Ninja del celo',d:'Descarta para improvisar una solución con los objetos que tengas a mano. Siempre que puedas justificarlo, obtienes un Hold en cualquier confrontación Manual o Física.'},
+  ],'Medicina':[
+    {n:'Analgésicos y vodka',d:'Descarta para realizar una prueba de Atención Médica sin necesidad de Tomar Tiempo.'},
+    {n:'Médico de campo',d:'Descarta para hacer un Push de Diagnóstico, Patología forense o Farmacología, o para ganar un dado extra de Medicina.'},
+  ],'Red de contactos':[
+    {n:'¿Qué haces aquí?',d:'Descarta para realizar una prueba de Red de contactos y crear un Contacto cuando normalmente no podrías hacerlo. Tu prueba tiene una penalización de -4.'},
+    {n:'Nunca te conocí',d:'Descarta cuando un Contacto te traicione para revelar que ya lo habías previsto. Describe cómo evitas los efectos de la traición, o gana 4 dados aplicables a cualquier Desafío derivado.'},
+  ],'Preparación':[
+    {n:'A tiempo',d:'Descarta esta carta para revelar que tomaste alguna acción de antemano: plantaste una bomba, sobornaste a un policía, investigaste la ruta de escape.'},
+    {n:'El fondo de reptiles',d:'Descarta para tener acceso a dinero suficiente para una compra o soborno importante.'},
+  ],'Sentir el peligro':[
+    {n:'Intuición',d:'Descarta para ganar +1 dado de Sentir el peligro en un Desafío.'},
+    {n:'En guardia',d:'Tienes un don especial para detectar la presencia de lo sobrenatural. Descarta cuando ganes un Problema de Sombra para refrescar todos tus pools de dados.'},
+  ],'Disparo':[
+    {n:'Francotirador',d:'Si tienes la oportunidad de prepararte y apuntar, descarta para ganar +2 dados en un Desafío de Disparo.'},
+    {n:'Dos pistolas',d:'Descarta para ganar +1 dado de Disparo.'},
+  ],'Vigilancia':[
+    {n:'Artista del pavimento',d:'Descarta para declarar retroactivamente que alguna persona aparentemente inocente en la escena trabaja contigo y también está vigilando al objetivo.'},
+    {n:'Conciencia situacional total',d:'Descarta para ganar +1 dado de Vigilancia en un Desafío.'},
+  ],
+};
+const STEPS = ['Identidad','Inv. Fijas','Inv. Opcionales','Habs. Generales','Guindas','Resumen'];
+
+// ─────────────────────────────────────────────────────────────
+// ESTADO
+// ─────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'nba_soloops_agentes';
+let agents = [];       // array de agentes guardados
+let currentId = null;  // id del agente en edición
+let state = null;      // estado del wizard activo
+let mode = 'home';     // 'home' | 'wizard' | 'view'
+
+function genId(){return 'ag_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);}
+
+function loadAgents(){
+  try{agents=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}
+  catch{agents=[];}
+}
+function saveAgents(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(agents));
+}
+function findAgent(id){return agents.find(a=>a.id===id);}
+
+// ─────────────────────────────────────────────────────────────
+// SIDEBAR
+// ─────────────────────────────────────────────────────────────
+function renderSidebar(){
+  const list = document.getElementById('agentList');
+  const msg  = document.getElementById('noAgentsMsg');
+  const items = agents.map(a=>`
+    <div class="agent-item ${a.id===currentId?'active':''}" onclick="verAgente('${a.id}')">
+      <div class="agent-item-name">${esc(a.nombre)||'Sin nombre'}</div>
+      <button class="agent-item-del" onclick="event.stopPropagation();confirmarBorrar('${a.id}')" title="Borrar">×</button>
+    </div>
+  `).join('');
+  if(agents.length===0){
+    msg.style.display='block';
+    const existing = list.querySelectorAll('.agent-item');
+    existing.forEach(e=>e.remove());
+  } else {
+    msg.style.display='none';
+    list.innerHTML = items + `<div id="noAgentsMsg" style="display:none"></div>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────────────────────
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODAL
+// ─────────────────────────────────────────────────────────────
+function showModal(title,text,btns){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalText').textContent=text;
+  document.getElementById('modalBtns').innerHTML=btns;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.add('hidden');}
+
+function confirmarBorrar(id){
+  const a=findAgent(id);
+  showModal(
+    'BORRAR AGENTE',
+    `¿Confirmas la eliminación de "${a?.nombre||'Sin nombre'}" del registro? Esta acción no puede deshacerse.`,
+    `<button class="btn" onclick="closeModal()">CANCELAR</button>
+     <button class="btn danger" onclick="borrarAgente('${id}')">BORRAR</button>`
+  );
+}
+function borrarAgente(id){
+  closeModal();
+  agents=agents.filter(a=>a.id!==id);
+  saveAgents();
+  if(currentId===id){currentId=null;renderHome();}
+  renderSidebar();
+  toast('AGENTE ELIMINADO');
+}
+
+// ─────────────────────────────────────────────────────────────
+// HOME
+// ─────────────────────────────────────────────────────────────
+function renderHome(){
+  mode='home';currentId=null;
+  document.getElementById('pageTitle').textContent='REGISTRO DE AGENTES';
+  document.getElementById('pageSub').textContent='Protocolo de identidad encubierta // GUMSHOE One-2-One';
+  document.getElementById('clearanceTag').textContent='CLASIFICADO';
+  document.getElementById('progressWrap').style.display='none';
+  renderSidebar();
+
+  const n=agents.length;
+  document.getElementById('appContent').innerHTML=`
+    <div class="card">
+      <div class="card-title">ESTADO DEL REGISTRO</div>
+      <div style="font-size:11px;color:var(--dim);line-height:1.9;">
+        Agentes registrados: <b style="color:var(--ink);">${n}</b><br>
+        Sistema: <b style="color:var(--ink);">NBA: Solo Ops — GUMSHOE One-2-One</b><br>
+        Almacenamiento: <b style="color:var(--ink);">Local (navegador)</b>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">INSTRUCCIONES</div>
+      <div class="nota">
+        Usa el panel izquierdo para crear un nuevo agente o cargar uno existente.<br>
+        Los datos se guardan automáticamente en tu navegador.<br>
+        Desde el resumen de cada agente puedes imprimir la ficha o exportar el PDF.
+      </div>
+    </div>
+    ${n===0?`<div class="card" style="border-color:var(--red);border-style:dashed;">
+      <div class="card-title">SIN AGENTES</div>
+      <div class="nota">No hay ningún agente en el registro. Pulsa <b>NUEVO AGENTE</b> en el panel izquierdo para empezar.</div>
+    </div>`:''}
+  `;
+}
+
+// ─────────────────────────────────────────────────────────────
+// WIZARD — NUEVO AGENTE
+// ─────────────────────────────────────────────────────────────
+function nuevoAgente(){
+  currentId = genId();
+  state = {
+    id:currentId, paso:0,
+    nombre:'',alias:'',origen:'',ocupacion:'',descripcion:'',motivacion:'',
+    invOpcionales:[], guindas:[],
+  };
+  mode='wizard';
+  renderSidebar();
+  renderWizard();
+}
+
+function editarAgente(id){
+  const a=findAgent(id);if(!a)return;
+  currentId=id;
+  state={...a,paso:0};
+  mode='wizard';
+  renderSidebar();
+  renderWizard();
+}
+
+function renderWizard(){
+  document.getElementById('pageTitle').textContent='NUEVO AGENTE';
+  document.getElementById('pageSub').textContent=state.nombre?`// ${state.nombre.toUpperCase()}`:' ';
+  document.getElementById('clearanceTag').textContent='EN PROCESO';
+  document.getElementById('progressWrap').style.display='block';
+
+  const bar=document.getElementById('progressBar');
+  bar.innerHTML=STEPS.map((s,i)=>`<div class="step-pip ${i<state.paso?'done':i===state.paso?'active':''}" title="${s}"></div>`).join('');
+  document.getElementById('progressLabel').textContent=`PASO ${String(state.paso+1).padStart(2,'0')} / ${STEPS.length} — ${STEPS[state.paso].toUpperCase()}`;
+
+  const renders=[rIdentidad,rInvFijas,rInvOpc,rGenerales,rGuindas,rResumen];
+  document.getElementById('appContent').innerHTML=renders[state.paso]();
+  attachEvents();
+  window.scrollTo(0,0);
+}
+
+function attachEvents(){
+  ['nombre','alias','origen','ocupacion','descripcion','motivacion'].forEach(c=>{
+    const el=document.getElementById('f-'+c);
+    if(el) el.addEventListener('input',e=>{
+      state[c]=e.target.value;
+      if(c==='nombre') document.getElementById('pageSub').textContent=state.nombre?`// ${state.nombre.toUpperCase()}`:' ';
+    });
+  });
+}
+
+function next(){if(state.paso<5){state.paso++;renderWizard();}}
+function prev(){if(state.paso>0){state.paso--;renderWizard();}}
+
+// Guardar y volver a ver
+function guardarYVer(){
+  const idx=agents.findIndex(a=>a.id===state.id);
+  const datos={...state};
+  if(idx>=0) agents[idx]=datos; else agents.push(datos);
+  saveAgents();
+  renderSidebar();
+  verAgente(state.id);
+  toast('AGENTE GUARDADO');
+}
+
+// ─────────────────────────────────────────────────────────────
+// VER AGENTE
+// ─────────────────────────────────────────────────────────────
+function verAgente(id){
+  const a=findAgent(id);if(!a)return;
+  currentId=id;state=null;mode='view';
+  renderSidebar();
+
+  document.getElementById('pageTitle').textContent=a.nombre||'SIN NOMBRE';
+  document.getElementById('pageSub').textContent=[a.alias&&'// '+a.alias.toUpperCase(),a.origen&&'// '+a.origen.toUpperCase()].filter(Boolean).join(' ')||'';
+  document.getElementById('clearanceTag').textContent='REGISTRADO';
+  document.getElementById('progressWrap').style.display='none';
+
+  const guindasData=a.guindas.map(gn=>{
+    for(const [h,gs] of Object.entries(GUINDAS)){
+      const g=gs.find(x=>x.n===gn);if(g)return{...g,h};
+    }
+    return{n:gn,d:'',h:''};
+  });
+
+  document.getElementById('appContent').innerHTML=`
+    <div class="action-strip">
+      <button class="action-btn red" onclick="editarAgente('${a.id}')">✎ EDITAR</button>
+      <button class="action-btn" onclick="exportarPDF('${a.id}')">⬇ PDF</button>
+      <button class="action-btn" onclick="exportarJSON('${a.id}')">⬇ JSON</button>
+      <button class="action-btn" onclick="window.print()">⎙ IMPRIMIR</button>
+    </div>
+
+    <div class="card" style="margin-top:1.25rem;">
+      <div class="res-nombre">${esc(a.nombre)||'SIN NOMBRE'}</div>
+      <div class="res-sub">${[a.alias&&'// '+a.alias.toUpperCase(),a.origen&&'// '+a.origen.toUpperCase()].filter(Boolean).join(' ')}</div>
+      <div class="res-grid">
+        <div>
+          <div class="card-title">DATOS DEL AGENTE</div>
+          ${[['Nombre',a.nombre],['Alias',a.alias],['Origen',a.origen],['Afiliación anterior',a.ocupacion]].map(([k,v])=>`
+            <div class="stat-row"><span>${k}</span><span>${v||'—'}</span></div>
+          `).join('')}
+        </div>
+        <div>
+          <div class="card-title">RECURSOS INICIALES</div>
+          ${[['Empujes iniciales','3'],['Dados por hab. general','2'],['Guindas de inicio','3'],['Habilidades de investigación','15']].map(([k,v])=>`
+            <div class="stat-row"><span>${k}</span><span class="stat-val">${v}</span></div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <div class="card-title">HABILIDADES DE INVESTIGACIÓN (15)</div>
+        <div class="inv-list">
+          ${INV_FIJAS.map(x=>`<div class="inv-item">${x}</div>`).join('')}
+          ${(a.invOpcionales||[]).map(x=>`<div class="inv-item opc">${x}</div>`).join('')}
+        </div>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <div class="card-title">HABILIDADES GENERALES (16) — 2 dados cada una</div>
+        <div class="inv-list">
+          ${GENERALES.map(g=>`<div class="inv-item opc">${g.n} <span style="color:#bbb;font-size:9px;">(${g.c})</span></div>`).join('')}
+        </div>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <div class="card-title">GUINDAS (3)</div>
+        ${guindasData.map(g=>`
+          <div class="guinda-card">
+            <div><span class="guinda-titulo">${esc(g.n)}</span><span class="guinda-hab">${g.h.toUpperCase()}</span></div>
+            <div class="guinda-desc">${esc(g.d)}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      ${(a.descripcion||a.motivacion)?`
+        <div class="res-2col">
+          ${a.descripcion?`<div class="lore-box"><h4>DESCRIPCIÓN</h4><p>${esc(a.descripcion)}</p></div>`:''}
+          ${a.motivacion?`<div class="lore-box"><h4>MOTIVACIÓN</h4><p>${esc(a.motivacion)}</p></div>`:''}
+        </div>
+      `:''}
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────────────────────
+// PASOS DEL WIZARD
+// ─────────────────────────────────────────────────────────────
+function rIdentidad(){return`
+  <div class="step-no">PASO 01 / 06</div>
+  <div class="step-title">Identidad del Agente</div>
+  <div class="card">
+    <div class="card-title">Datos Personales</div>
+    <div class="field-row">
+      <div class="field"><label>Nombre completo</label><input type="text" id="f-nombre" value="${esc(state.nombre)}" placeholder="Nombre real del agente"></div>
+      <div class="field"><label>Alias / Nombre en clave</label><input type="text" id="f-alias" value="${esc(state.alias)}" placeholder="Nombre de cobertura o alias operativo"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Origen / Nacionalidad</label><input type="text" id="f-origen" value="${esc(state.origen)}" placeholder="País o región de origen"></div>
+      <div class="field"><label>Afiliación anterior</label><input type="text" id="f-ocupacion" value="${esc(state.ocupacion)}" placeholder="MI5, DGSE, Mossad..."></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Expediente</div>
+    <div class="field"><label>Descripción física y rasgos</label><textarea id="f-descripcion" placeholder="Aspecto, edad aproximada, rasgos distintivos...">${esc(state.descripcion)}</textarea></div>
+    <div class="field"><label>Motivación — ¿Por qué caza vampiros?</label><textarea id="f-motivacion" placeholder="El suceso o razón que la arrastró a este mundo...">${esc(state.motivacion)}</textarea></div>
+  </div>
+  <div class="btn-row"><div></div><button class="btn pri" onclick="next()">SIGUIENTE →</button></div>
+`;}
+
+function rInvFijas(){return`
+  <div class="step-no">PASO 02 / 06</div>
+  <div class="step-title">Habilidades de Investigación — Fijas</div>
+  <div class="card">
+    <div class="card-title">Base común a todos los agentes de Solo Ops</div>
+    <p class="nota">Estas 9 habilidades son comunes a todos los agentes. Garantizan acceso a información sin tirada: si tienes la habilidad y estás en el lugar correcto, siempre encuentras la pista. El reto no está en encontrar la información, sino en interpretarla y actuar sobre ella.</p>
+    <div class="ab-grid">
+      ${INV_FIJAS.map(a=>`<div class="ab-item fixed"><div class="dot"></div><span>${a}</span></div>`).join('')}
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="prev()">← ANTERIOR</button>
+    <button class="btn pri" onclick="next()">SIGUIENTE →</button>
+  </div>
+`;}
+
+function rInvOpc(){
+  const sel=state.invOpcionales;
+  return`
+  <div class="step-no">PASO 03 / 06</div>
+  <div class="step-title">Habilidades de Investigación — Opcionales</div>
+  <div class="card">
+    <div class="card-title">Elige 6 habilidades adicionales</div>
+    <div class="counter">Seleccionadas: <b>${sel.length}</b> / 6</div>
+    <p class="nota">Las habilidades de investigación siempre funcionan: si tienes la habilidad y estás en el lugar correcto, encuentras la pista sin tirada. Las que no poseas pueden cubrirlas Contactos con las habilidades especializadas que necesites.</p>
+    <div class="ab-grid">
+      ${INV_OPCIONALES.map(a=>`
+        <div class="ab-item ${sel.includes(a.n)?'sel':''}" onclick="toggleInv('${esc2(a.n)}')">
+          <div class="dot"></div><span>${a.n}</span>
+          <span class="ab-type">${a.t}</span>
+        </div>
+      `).join('')}
+    </div>
+    ${sel.length>6?'<p class="warning">Máximo 6 habilidades opcionales.</p>':''}
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="prev()">← ANTERIOR</button>
+    <button class="btn pri" onclick="next()" ${sel.length!==6?'disabled':''}>SIGUIENTE →</button>
+  </div>
+`;}
+
+function rGenerales(){return`
+  <div class="step-no">PASO 04 / 06</div>
+  <div class="step-title">Habilidades Generales</div>
+  <div class="card">
+    <div class="card-title">16 habilidades — todas a 2 dados — iguales para todos los agentes</div>
+    <p class="nota">Todas las habilidades generales empiezan con 2 dados. Al usar una habilidad en un Desafío queda Agotada (-1 dado) hasta la próxima vez que Tomes Tiempo. Puedes ganar dados extra asumiendo un Problema Extra, realizando un Stunt (gastando 2 dados de otra habilidad) o gastando una Ventaja o un Contacto.</p>
+    <div class="gen-grid">
+      ${GENERALES.map(g=>`
+        <div class="gen-item">
+          <div><div>${g.n}</div><div class="cat">${g.c}</div></div>
+          <span class="gen-dice">2d</span>
+        </div>
+      `).join('')}
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="prev()">← ANTERIOR</button>
+    <button class="btn pri" onclick="next()">SIGUIENTE →</button>
+  </div>
+`;}
+
+function rGuindas(){
+  const sel=state.guindas;
+  return`
+  <div class="step-no">PASO 05 / 06</div>
+  <div class="step-title">Guindas de inicio</div>
+  <div class="card">
+    <div class="card-title">Elige 3 guindas de inicio</div>
+    <div class="counter">Seleccionadas: <b>${sel.length}</b> / 3</div>
+    <p class="nota">Empiezas con 3 guindas. Puedes cambiar una guinda al viajar de una ciudad a otra, o cuando tomas un período de inactividad antes de una confrontación importante (cuenta como Tomar Tiempo). Si has descartado una guinda durante el juego, no recibes una carta de reemplazo y tendrás que apañarte con una mano reducida hasta el final de la operación.</p>
+    ${Object.entries(GUINDAS).map(([hab,gs])=>`
+      <div class="mastery-group-title">${hab.toUpperCase()}</div>
+      ${gs.map(g=>`
+        <div class="mastery-item ${sel.includes(g.n)?'sel':''}" onclick="toggleGuinda('${esc2(g.n)}')">
+          <div class="dot" style="margin-top:4px;flex-shrink:0;"></div>
+          <div>
+            <div class="mastery-name">${g.n}</div>
+            <div class="mastery-desc">${g.d}</div>
+          </div>
+        </div>
+      `).join('')}
+    `).join('')}
+    ${sel.length>3?'<p class="warning">Máximo 3 guindas.</p>':''}
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="prev()">← ANTERIOR</button>
+    <button class="btn pri" onclick="next()" ${sel.length!==3?'disabled':''}>VER RESUMEN →</button>
+  </div>
+`;}
+
+function rResumen(){
+  const guindasData=state.guindas.map(gn=>{
+    for(const [h,gs] of Object.entries(GUINDAS)){const g=gs.find(x=>x.n===gn);if(g)return{...g,h};}
+    return{n:gn,d:'',h:''};
+  });
+  return`
+  <div class="step-no">PASO 06 / 06</div>
+  <div class="step-title">Expediente del Agente</div>
+  <div class="card">
+    <div class="res-nombre">${state.nombre||'SIN NOMBRE'}</div>
+    <div class="res-sub">${[state.alias&&'// '+state.alias.toUpperCase(),state.origen&&'// '+state.origen.toUpperCase()].filter(Boolean).join(' ')}</div>
+    <div class="res-grid">
+      <div>
+        <div class="card-title">DATOS DEL AGENTE</div>
+        ${[['Nombre',state.nombre],['Alias',state.alias],['Origen',state.origen],['Afiliación anterior',state.ocupacion]].map(([k,v])=>`
+          <div class="stat-row"><span>${k}</span><span>${v||'—'}</span></div>
+        `).join('')}
+      </div>
+      <div>
+        <div class="card-title">RECURSOS INICIALES</div>
+        ${[['Empujes iniciales','3'],['Dados por hab. general','2'],['Guindas de inicio','3'],['Habilidades de investigación','15']].map(([k,v])=>`
+          <div class="stat-row"><span>${k}</span><span class="stat-val">${v}</span></div>
+        `).join('')}
+      </div>
+    </div>
+    <div style="margin-top:1rem;">
+      <div class="card-title">HABILIDADES DE INVESTIGACIÓN (15)</div>
+      <div class="inv-list">
+        ${INV_FIJAS.map(x=>`<div class="inv-item">${x}</div>`).join('')}
+        ${state.invOpcionales.map(x=>`<div class="inv-item opc">${x}</div>`).join('')}
+      </div>
+    </div>
+    <div style="margin-top:1rem;">
+      <div class="card-title">HABILIDADES GENERALES (16) — 2 dados cada una</div>
+      <div class="inv-list">
+        ${GENERALES.map(g=>`<div class="inv-item opc">${g.n} <span style="color:#bbb;font-size:9px;">(${g.c})</span></div>`).join('')}
+      </div>
+    </div>
+    <div style="margin-top:1rem;">
+      <div class="card-title">GUINDAS (3)</div>
+      ${guindasData.map(g=>`
+        <div class="guinda-card">
+          <div><span class="guinda-titulo">${esc(g.n)}</span><span class="guinda-hab">${g.h.toUpperCase()}</span></div>
+          <div class="guinda-desc">${esc(g.d)}</div>
+        </div>
+      `).join('')}
+    </div>
+    ${(state.descripcion||state.motivacion)?`
+      <div class="res-2col">
+        ${state.descripcion?`<div class="lore-box"><h4>DESCRIPCIÓN</h4><p>${esc(state.descripcion)}</p></div>`:''}
+        ${state.motivacion?`<div class="lore-box"><h4>MOTIVACIÓN</h4><p>${esc(state.motivacion)}</p></div>`:''}
+      </div>
+    `:''}
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="prev()">← ANTERIOR</button>
+    <button class="btn pri" onclick="guardarYVer()">✓ GUARDAR AGENTE</button>
+  </div>
+`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// INTERACCIÓN
+// ─────────────────────────────────────────────────────────────
+function toggleInv(n){
+  const s=state.invOpcionales;
+  state.invOpcionales=s.includes(n)?s.filter(x=>x!==n):s.length<6?[...s,n]:s;
+  renderWizard();
+}
+function toggleGuinda(n){
+  const s=state.guindas;
+  state.guindas=s.includes(n)?s.filter(x=>x!==n):s.length<3?[...s,n]:s;
+  renderWizard();
+}
+
+// ─────────────────────────────────────────────────────────────
+// EXPORTAR JSON
+// ─────────────────────────────────────────────────────────────
+function exportarJSON(id){
+  const a=findAgent(id);if(!a)return;
+  const blob=new Blob([JSON.stringify(a,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  link.href=url;link.download=`agente_${(a.nombre||'sin_nombre').replace(/\s+/g,'_')}.json`;
+  link.click();URL.revokeObjectURL(url);
+  toast('JSON EXPORTADO');
+}
+
+// ─────────────────────────────────────────────────────────────
+// IMPORTAR JSON
+// ─────────────────────────────────────────────────────────────
+function importarJSON(){document.getElementById('fileInput').click();}
+function leerJSON(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.nombre&&!data.alias)throw new Error('JSON no válido');
+      const id=genId();
+      const agente={...data,id};
+      agents.push(agente);
+      saveAgents();
+      renderSidebar();
+      verAgente(id);
+      toast('AGENTE IMPORTADO');
+    }catch{
+      toast('ERROR: JSON no válido');
+    }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ─────────────────────────────────────────────────────────────
+// PDF con jsPDF
+// ─────────────────────────────────────────────────────────────
+function exportarPDF(id){
+  const a=findAgent(id);if(!a)return;
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210,H=297,m=18,cw=W-m*2;
+  let y=m;
+
+  const RED=[139,26,26];
+  const INK=[26,17,8];
+  const DIM=[100,90,80];
+  const RULE=[200,190,175];
+
+  // ── Cabecera ──
+  doc.setFillColor(...RED);
+  doc.rect(m,y,cw,0.5,'F');
+  y+=4;
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);doc.setTextColor(...INK);
+  doc.text((a.nombre||'SIN NOMBRE').toUpperCase(),m,y);
+  y+=5;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);doc.setTextColor(...DIM);
+  const sub=[a.alias&&'// '+a.alias.toUpperCase(),a.origen&&'// '+a.origen.toUpperCase()].filter(Boolean).join('  ');
+  if(sub){doc.text(sub,m,y);y+=4;}
+  doc.setTextColor(...RED);
+  doc.text('AGENTES DE LA NOCHE: SOLO OPS — GUMSHOE One-2-One',m,y);
+  y+=3;
+  doc.setFillColor(...RED);doc.rect(m,y,cw,0.5,'F');
+  y+=6;
+
+  // ── Helper sección ──
+  function sectionTitle(t){
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(...RED);
+    doc.text(t,m,y);
+    doc.setDrawColor(...RULE);doc.line(m,y+1,m+cw,y+1);
+    y+=5;
+  }
+  function row(label,val,col2=false){
+    const x2=col2?m+cw/2+2:m;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...DIM);
+    doc.text(label,x2,y);
+    doc.setTextColor(...INK);
+    doc.text(String(val||'—'),x2+cw/2-4,y,{align:'right'});
+    doc.setDrawColor(...RULE);doc.line(x2,y+1,x2+cw/2-4,y+1);
+    if(!col2)y+=5;
+  }
+  function checkPage(need=12){if(y+need>H-m){doc.addPage();y=m;}}
+
+  // ── Datos ──
+  sectionTitle('DATOS DEL AGENTE');
+  const half=cw/2-4;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  const campos=[['Nombre',a.nombre],['Alias',a.alias],['Origen',a.origen],['Afiliación',a.ocupacion]];
+  campos.forEach(([k,v],i)=>{
+    const col=i%2===0;
+    const x=col?m:m+cw/2+2;
+    doc.setTextColor(...DIM);doc.text(k,x,y);
+    doc.setTextColor(...INK);doc.text(v||'—',x+half,y,{align:'right'});
+    doc.setDrawColor(...RULE);doc.line(x,y+1,x+half,y+1);
+    if(i%2===1)y+=5;
+  });
+  if(campos.length%2!==0)y+=5;
+  y+=2;
+
+  // ── Recursos ──
+  sectionTitle('RECURSOS INICIALES');
+  const recursos=[['Empujes iniciales','3'],['Dados por hab. general','2'],['Guindas','3'],['Habilidades investigación','15']];
+  recursos.forEach(([k,v],i)=>{
+    const x=i%2===0?m:m+cw/2+2;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.setTextColor(...DIM);doc.text(k,x,y);
+    doc.setFont('helvetica','bold');doc.setTextColor(...RED);
+    doc.text(v,x+half,y,{align:'right'});
+    doc.setFont('helvetica','normal');
+    doc.setDrawColor(...RULE);doc.line(x,y+1,x+half,y+1);
+    if(i%2===1)y+=5;
+  });
+  if(recursos.length%2!==0)y+=5;
+  y+=2;
+
+  // ── Habilidades investigación ──
+  checkPage(30);
+  sectionTitle('HABILIDADES DE INVESTIGACIÓN (15)');
+  const allInv=[...INV_FIJAS,...(a.invOpcionales||[])];
+  const cols=3,colW=cw/cols;
+  doc.setFontSize(8);
+  allInv.forEach((hab,i)=>{
+    const col=i%cols,row2=Math.floor(i/cols);
+    const x=m+col*colW,yy=y+row2*4.5;
+    checkPage(5);
+    const isFija=INV_FIJAS.includes(hab);
+    if(isFija){doc.setTextColor(150,140,130);}else{doc.setTextColor(...INK);}
+    doc.text('▸ '+hab,x,yy);
+  });
+  y+=Math.ceil(allInv.length/cols)*4.5+4;
+
+  // ── Habilidades generales ──
+  checkPage(30);
+  sectionTitle('HABILIDADES GENERALES (16) — 2 dados cada una');
+  GENERALES.forEach((g,i)=>{
+    const col=i%cols,row2=Math.floor(i/cols);
+    const x=m+col*colW,yy=y+row2*4.5;
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...INK);
+    doc.text('▸ '+g.n,x,yy);
+    doc.setFontSize(7);doc.setTextColor(...DIM);
+    doc.text(`(${g.c})`,x+colW-2,yy,{align:'right'});
+  });
+  y+=Math.ceil(GENERALES.length/cols)*4.5+4;
+
+  // ── Guindas ──
+  checkPage(20);
+  sectionTitle('GUINDAS (3)');
+  (a.guindas||[]).forEach(gn=>{
+    let gData=null,gHab='';
+    for(const [h,gs] of Object.entries(GUINDAS)){
+      const g=gs.find(x=>x.n===gn);if(g){gData=g;gHab=h;break;}
+    }
+    if(!gData)return;
+    checkPage(16);
+    doc.setFillColor(253,240,238);doc.rect(m,y-3,cw,1,'F');
+    doc.setFillColor(...RED);doc.rect(m,y-3,1.5,10,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...INK);
+    doc.text(gData.n,m+4,y);
+    doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...RED);
+    doc.text(gHab.toUpperCase(),m+4+doc.getTextWidth(gData.n)+3,y);
+    y+=4;
+    doc.setFont('helvetica','italic');doc.setFontSize(8);doc.setTextColor(...DIM);
+    const lines=doc.splitTextToSize(gData.d,cw-6);
+    lines.forEach(l=>{doc.text(l,m+4,y);y+=3.5;});
+    y+=3;
+  });
+
+  // ── Descripción / motivación ──
+  if(a.descripcion||a.motivacion){
+    checkPage(20);
+    sectionTitle('DESCRIPCIÓN Y MOTIVACIÓN');
+    if(a.descripcion){
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(...RED);
+      doc.text('DESCRIPCIÓN',m,y);y+=3.5;
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...INK);
+      const ls=doc.splitTextToSize(a.descripcion,cw);
+      ls.forEach(l=>{checkPage(5);doc.text(l,m,y);y+=3.5;});
+      y+=2;
+    }
+    if(a.motivacion){
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(...RED);
+      doc.text('MOTIVACIÓN',m,y);y+=3.5;
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...INK);
+      const ls=doc.splitTextToSize(a.motivacion,cw);
+      ls.forEach(l=>{checkPage(5);doc.text(l,m,y);y+=3.5;});
+    }
+  }
+
+  // ── Footer ──
+  const pages=doc.getNumberOfPages();
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);
+    doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...DIM);
+    doc.text(`NBA: Solo Ops — Ficha de agente // ${new Date().toLocaleDateString('es-ES')}`,m,H-10);
+    doc.text(`${i}/${pages}`,W-m,H-10,{align:'right'});
+    doc.setDrawColor(...RULE);doc.line(m,H-12,W-m,H-12);
+  }
+
+  doc.save(`agente_${(a.nombre||'sin_nombre').replace(/\s+/g,'_')}.pdf`);
+  toast('PDF GENERADO');
+}
+
+// ─────────────────────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────────────────────
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function esc2(s){return(s||'').replace(/'/g,"\\'");}
+
+// ─────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────
+loadAgents();
+renderHome();
+</script>
+</body>
+</html>
